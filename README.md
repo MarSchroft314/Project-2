@@ -38,7 +38,23 @@ pip install pillow img2pdf pdf2image python-docx docx2txt markdown reportlab pan
    - **Mac**: `brew install ffmpeg poppler`
    - **Linux**: `sudo apt install ffmpeg poppler-utils`
 
-## Usage
+## GUI
+
+A simple desktop interface is included via `file_converter_gui.py`, built with Tkinter (comes bundled with Python — no extra install needed).
+
+```bash
+python file_converter_gui.py
+```
+
+This opens a window where you can:
+- Browse for an input file
+- Pick the target format from a dropdown
+- Choose where to save the output
+- Click **Convert** and get a success/error message when done
+
+Make sure `file_converter_gui.py` stays in the same folder as `file_converter.py`, since the GUI imports the conversion logic from it.
+
+## Command-line usage
 
 ```bash
 python file_converter.py <input_file> <output_file>
