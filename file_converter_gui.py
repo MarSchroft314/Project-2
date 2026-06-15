@@ -1,37 +1,27 @@
 #!/usr/bin/env python3
-"""
-Universal File Converter - GUI
-================================
-
-A simple graphical interface for file_converter.py using Tkinter
-(built into Python, no extra install needed for the UI itself).
-
-Make sure file_converter.py is in the same folder as this file.
-
-Run with:
-    python file_converter_gui.py
-"""
+"""Universal File Converter - GUI"""
 
 import os
+import sys
 import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from pathlib import Path
 
-import file_converter as fc
+# Import only the pieces we need, not the whole module
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-
-# ---------------------------------------------------------------------------
-# Supported output formats shown in the dropdown, grouped by category
-# ---------------------------------------------------------------------------
-
-ALL_FORMATS = sorted(
-    fc.IMAGE_FORMATS
-    | fc.AUDIO_FORMATS
-    | fc.VIDEO_FORMATS
-    | fc.DATA_FORMATS
-    | fc.DOC_FORMATS
+from file_converter import (
+    convert,
+    IMAGE_FORMATS,
+    AUDIO_FORMATS,
+    VIDEO_FORMATS,
+    DATA_FORMATS,
+    DOC_FORMATS,
+    ext_of,
 )
+
+ALL_FORMATS = sorted(IMAGE_FORMATS | AUDIO_FORMATS | VIDEO_FORMATS | DATA_FORMATS | DOC_FORMATS)
 
 
 class ConverterApp(tk.Tk):
@@ -50,46 +40,26 @@ class ConverterApp(tk.Tk):
 
         self._build_ui()
 
-    # -----------------------------------------------------------------
-    # UI layout
-    # -----------------------------------------------------------------
     def _build_ui(self):
-        title = tk.Label(self, text="Universal File Converter", font=("Segoe UI", 16, "bold"))
-        title.pack(pady=(0, 15))
+        tk.Label(self, text="Universal File Converter", font=("Segoe UI", 16, "bold")).pack(pady=(0, 15))
 
-        # --- Input file row ---
         frame1 = tk.Frame(self)
         frame1.pack(fill="x", pady=5)
-
         tk.Label(frame1, text="Input file:", width=12, anchor="w").pack(side="left")
-        entry1 = tk.Entry(frame1, textvariable=self.input_path)
-        entry1.pack(side="left", fill="x", expand=True, padx=5)
+        tk.Entry(frame1, textvariable=self.input_path).pack(side="left", fill="x", expand=True, padx=5)
         tk.Button(frame1, text="Browse...", command=self.browse_input).pack(side="left")
 
-        # --- Output format row ---
         frame2 = tk.Frame(self)
         frame2.pack(fill="x", pady=5)
-
         tk.Label(frame2, text="Convert to:", width=12, anchor="w").pack(side="left")
-        combo = ttk.Combobox(
-            frame2,
-            textvariable=self.output_format,
-            values=ALL_FORMATS,
-            state="readonly",
-            width=15,
-        )
-        combo.pack(side="left", padx=5)
+        ttk.Combobox(frame2, textvariable=self.output_format, values=ALL_FORMATS, state="readonly", width=15).pack(side="left", padx=5)
 
-        # --- Output folder row ---
         frame3 = tk.Frame(self)
         frame3.pack(fill="x", pady=5)
-
         tk.Label(frame3, text="Save to:", width=12, anchor="w").pack(side="left")
-        entry3 = tk.Entry(frame3, textvariable=self.output_dir)
-        entry3.pack(side="left", fill="x", expand=True, padx=5)
+        tk.Entry(frame3, textvariable=self.output_dir).pack(side="left", fill="x", expand=True, padx=5)
         tk.Button(frame3, text="Browse...", command=self.browse_output_dir).pack(side="left")
 
-        # --- Convert button ---
         self.convert_btn = tk.Button(
             self,
             text="Convert",
@@ -100,15 +70,12 @@ class ConverterApp(tk.Tk):
         )
         self.convert_btn.pack(pady=20, fill="x")
 
-        # --- Status / progress ---
         self.progress = ttk.Progressbar(self, mode="indeterminate")
         self.progress.pack(fill="x", pady=(0, 10))
 
-        status_label = tk.Label(self, textvariable=self.status_text, fg="gray")
-        status_label.pack()
+        tk.Label(self, textvariable=self.status_text, fg="gray").pack()
 
-        # --- Supported formats note ---
-        note = tk.Label(
+        tk.Label(
             self,
             text=(
                 "Supports: images (png, jpg, bmp, gif, webp, tiff, ico),\n"
@@ -118,12 +85,8 @@ class ConverterApp(tk.Tk):
             fg="gray",
             font=("Segoe UI", 8),
             justify="center",
-        )
-        note.pack(pady=(10, 0))
+        ).pack(pady=(10, 0))
 
-    # -----------------------------------------------------------------
-    # Event handlers
-    # -----------------------------------------------------------------
     def browse_input(self):
         path = filedialog.askopenfilename(title="Select a file to convert")
         if path:
@@ -150,25 +113,21 @@ class ConverterApp(tk.Tk):
         if not out_dir:
             out_dir = str(Path(src).parent)
 
-        src_ext = fc.ext_of(src)
-        if src_ext == dst_ext:
+        if ext_of(src) == dst_ext:
             messagebox.showerror("Error", "Input and output formats are the same.")
             return
 
-        stem = Path(src).stem
-        dst = str(Path(out_dir) / f"{stem}.{dst_ext}")
+        dst = str(Path(out_dir) / f"{Path(src).stem}.{dst_ext}")
 
         self.convert_btn.config(state="disabled")
         self.status_text.set("Converting...")
         self.progress.start(12)
 
-        # Run conversion in a background thread so the UI doesn't freeze
-        thread = threading.Thread(target=self._run_conversion, args=(src, dst), daemon=True)
-        thread.start()
+        threading.Thread(target=self._run_conversion, args=(src, dst), daemon=True).start()
 
     def _run_conversion(self, src, dst):
         try:
-            fc.convert(src, dst)
+            convert(src, dst)
             self.after(0, self._on_success, dst)
         except Exception as e:
             self.after(0, self._on_error, str(e))
@@ -187,5 +146,4 @@ class ConverterApp(tk.Tk):
 
 
 if __name__ == "__main__":
-    app = ConverterApp()
-    app.mainloop()
+    ConverterApp().mainloop()
